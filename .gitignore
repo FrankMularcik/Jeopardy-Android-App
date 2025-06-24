@@ -1,0 +1,66 @@
+# Gradle files
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Local configuration file (SDK path, etc.)
+local.properties
+
+# Log files
+*.log
+
+# IDE settings
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Android Studio cache
+.cache/
+.cxx/
+*.hprof
+
+# Build output
+**/build/
+**/captures/
+**/generated/
+**/outputs/
+**/intermediates/
+**/tmp/
+
+# Kotlin/Java compile output
+*.class
+*.dex
+*.apk
+*.ap_
+
+# ProGuard files
+proguard/
+
+# Test results
+test-results/
+test-output/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Keystore files (if you store local debug/release keys)
+*.jks
+*.keystore
+
+# Firebase/Crashlytics
+crashlytics.properties
+fabric.properties
+
+# Misc
+*.log
+.idea/libraries/
+
+# If using Jetpack Compose compiler metrics
+compose_metrics/
+compose_metrics.log
+
+# Jetpack Compose build artifacts
+*.pb
+compose*

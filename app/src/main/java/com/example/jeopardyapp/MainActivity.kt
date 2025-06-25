@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -29,8 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
-import com.example.jeopardyapp.model.Clue
-import com.example.jeopardyapp.model.JeopardyGame
 import com.example.jeopardyapp.model.JeopardyViewModel
 import com.example.jeopardyapp.model.Round
 import com.example.jeopardyapp.ui.ClueCard
@@ -56,14 +53,24 @@ fun MainApp() {
 
     NavHost(navController = navController, startDestination = "HomeScreen") {
         composable("HomeScreen") { HomeScreen(navController) }
-        composable("RoundsScreen") {RoundsScreen(navController, jeopardyViewModel) }
-        composable(route = "JeopardyBoard/{round}",
-                    arguments = listOf(navArgument("round") {type = NavType.IntType})
+        composable("RoundsScreen") { RoundsScreen(navController, jeopardyViewModel) }
+        composable(
+            route = "JeopardyBoard/{round}",
+            arguments = listOf(navArgument("round") { type = NavType.IntType })
         ) { backStackEntry ->
             val round = backStackEntry.arguments?.getInt("round") ?: 0
-            JeopardyBoard(navController = navController, roundNum = round, jeopardyViewModel) }
-        composable("ClueScreen") {ClueScreen(navController, jeopardyViewModel)}
-        composable("StatsScreen") { StatsScreen(navController, jeopardyViewModel) }
+            JeopardyBoard(navController = navController, roundNum = round, jeopardyViewModel)
+        }
+        composable("ClueScreen") { ClueScreen(navController, jeopardyViewModel) }
+        composable(
+            route = "StatsScreen/{allRounds}",
+            arguments = listOf(navArgument("allRounds") {
+                type = NavType.BoolType
+            })
+        ) { backStackEntry ->
+            val allRounds = backStackEntry.arguments?.getBoolean("allRounds") ?: false
+            StatsScreen(navController, jeopardyViewModel, allRounds)
+        }
     }
 }
 
@@ -115,7 +122,7 @@ fun RoundsScreen(navController: NavController, viewModel: JeopardyViewModel) {
         Button(onClick = {
             // TODO: show stats on stats screen
 
-            navController.navigate(("StatsScreen"))
+            navController.navigate(("StatsScreen/true"))
         },
             modifier = Modifier.padding(4.dp)
         )
@@ -173,7 +180,7 @@ fun JeopardyBoard(navController: NavController, roundNum: Int, viewModel: Jeopar
         }
 
         // TODO: when round is over we should show stats for end of this round only
-        Button(onClick = { navController.navigate(("RoundsScreen")) }
+        Button(onClick = { navController.navigate(("StatsScreen/false")) }
         ) {
             Text("Round Over.")
         }
@@ -248,36 +255,79 @@ fun ClueScreen(navController: NavController, viewModel: JeopardyViewModel) {
 
 // TODO: make it optional to give a round in which case we only display one round or if none passed, display all three
 @Composable
-fun StatsScreen(navController: NavController, viewModel: JeopardyViewModel) {
+fun StatsScreen(navController: NavController, viewModel: JeopardyViewModel, allRounds: Boolean) {
     // display number of questions, and all of 5 response types with numbers and % (for each round)
-    val round = viewModel.selectedRound
 
-    // TODO: add stats for other rounds and full game and make it prettier / format
+    val roundType = viewModel.selectedRound.roundType
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Text("Jeopardy Round")
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(ResponseType.entries.size + 1),
-            modifier = Modifier.fillMaxWidth().padding(top = 20.dp)
+    fun navigateToNextScreen()
+    {
+        var screenName = "RoundsScreen" // go back to RoundsScreen so user can pick next round
+        if (allRounds) // we are done with the game
+        {
+            // TODO: save jeopardyGame object / stats to database
+            screenName = "HomeScreen" // game is over - go to home so user can start a new game if they want
+        }
+        navController.navigate(screenName)
+    }
+    val jeopardyRound = viewModel.jeopardyGame.jeopardyRound
+    val doubleJeopardyRound = viewModel.jeopardyGame.doubleJeopardy
+    val finalJeopardyRound = viewModel.jeopardyGame.finalJeopardy
+
+    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 20.dp)) {
+
+        if (allRounds || roundType == jeopardyRound.roundType)
+        {
+            RoundStats(jeopardyRound)
+        }
+        if (allRounds || roundType == doubleJeopardyRound.roundType)
+        {
+            RoundStats(doubleJeopardyRound)
+        }
+        if (allRounds || roundType == finalJeopardyRound.roundType)
+        {
+            RoundStats(finalJeopardyRound)
+        }
+
+        if (allRounds)
+        {
+            // TODO: show full game stats
+        }
+        // TODO: show projected score
+
+        Button(
+            onClick = { navigateToNextScreen() },
+            modifier = Modifier.padding(4.dp),
+            contentPadding = PaddingValues(horizontal = 8.dp)
         ) {
-            item { Text("Total Clues") }
-            items(ResponseType.entries) { entry -> Text(entry.toString()) }
-
-            item { Text(round.totalClues.toString()) }
-            items(round.statsCounter.entries.toList()) { stat ->
-                Text(
-                    String.format(
-                        "%d (%.2f%%)",
-                        stat.value,
-                        100.0 * stat.value / round.totalClues
-                    )
-                )
-            }
+            Text("Continue")
         }
     }
 
-    // TODO: show projected score
+}
 
-    // TODO: at end of stats screen, go back to home screen and save game (if game over)
-    //  or go back to RoundsScreen if only a particular round is over
+@Composable
+fun RoundStats(round: Round)
+{
+    // TODO: improve formatting / make prettier
+
+    Text(round.roundType.toString())
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(ResponseType.entries.size + 1),
+        modifier = Modifier.fillMaxWidth().padding(top = 20.dp)
+    ) {
+        item { Text("Total Clues") }
+        items(ResponseType.entries) { entry -> Text(entry.toString()) }
+
+        item { Text(round.totalClues.toString()) }
+        items(round.statsCounter.entries.toList()) { stat ->
+            Text(
+                String.format(
+                    "%d (%.2f%%)",
+                    stat.value,
+                    100.0 * stat.value / round.totalClues
+                )
+            )
+        }
+    }
 }

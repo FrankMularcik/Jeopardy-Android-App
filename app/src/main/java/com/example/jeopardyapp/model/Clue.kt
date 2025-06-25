@@ -7,6 +7,7 @@ data class Clue(
     var response: ResponseType = ResponseType.NotSeen
 )
 
+// TODO: override toString method
 enum class ResponseType {
     NotSeen,        // haven't seen clue yet
     NoBuzz,         // don't know, wouldn't buzz
@@ -15,7 +16,7 @@ enum class ResponseType {
     Buzz_Incorrect  // would buzz but was incorrect
 }
 
-// can add this in later
+// TODO: let user select if it's a daily double?
 enum class QuestionType {
     JeopardyNormal,
     JeopardyDailyDouble,

@@ -109,8 +109,15 @@ class Round(val roundType: RoundType) {
 
     private fun InitializeStats()
     {
+        // initialize all response types to 0
+        for (responseType in ResponseType.entries)
+        {
+            _statsCounter[responseType] = 0
+        }
+
         for(clue in allClues)
         {
+            // TODO: probably a more efficient way to do this than using a nested for loop
             for (responseType in ResponseType.entries)
             {
                 if (clue.response == responseType)

@@ -3,16 +3,29 @@ package com.example.jeopardyapp.model
 class JeopardyGame {
 //air date
     //game type
-    var jeopardyRound = Round(RoundType.JeopardyRound)
-    var doubleJeopardy = Round(RoundType.DoubleJeopardy)
-    var finalJeopardy = Round(RoundType.FinalJeopardy)
+    var jeopardyRound = Round(RoundType.JeopardyRound, this)
+    var doubleJeopardy = Round(RoundType.DoubleJeopardy, this)
+    var finalJeopardy = Round(RoundType.FinalJeopardy, this)
 
     // TODO: add functions or fields for whole game stats
+    var statsCounter: Map<ResponseType, Int> = mutableMapOf<ResponseType, Int>()
+        get() = CombineStats()
 
     // TODO: add 'scoring' functionality
+    var score: Int = 0
+
+    private fun CombineStats(): Map<ResponseType, Int>
+    {
+        var stats = mutableMapOf<ResponseType, Int>()
+        for (response in ResponseType.entries)
+        {
+            stats[response] = jeopardyRound.statsCounter.getOrDefault(response, 0) + doubleJeopardy.statsCounter.getOrDefault(response, 0) + finalJeopardy.statsCounter.getOrDefault(response, 0)
+        }
+        return stats
+    }
 }
 
-class Category (var catName: String, var roundType: RoundType, var parent: Round) {
+class Category (var catName: String, var roundType: RoundType, val parent: Round) {
     val clues = mutableListOf<Clue>()
 
     init{
@@ -43,7 +56,7 @@ class Category (var catName: String, var roundType: RoundType, var parent: Round
     }
 }
 
-class Round(val roundType: RoundType) {
+class Round(val roundType: RoundType, val parent: JeopardyGame) {
     var categories = mutableListOf<Category>()
         private set
     var allClues: List<Clue> = emptyList()
@@ -128,9 +141,21 @@ class Round(val roundType: RoundType) {
         }
     }
 
-    public fun ClueAnswered(response: ResponseType)
+    public fun ClueAnswered(response: ResponseType, dollarAmt: Int)
     {
         _statsCounter[ResponseType.NotSeen] = _statsCounter.getOrDefault(ResponseType.NotSeen, 0) - 1
         _statsCounter[response] = _statsCounter.getOrDefault(response, 0) + 1
+
+        var scoreChange = 0
+        if (response == ResponseType.Buzz_Correct)
+        {
+            scoreChange = dollarAmt
+        }
+        else if (response == ResponseType.Buzz_Incorrect)
+        {
+            scoreChange = dollarAmt * -1
+        }
+
+        parent.score += scoreChange
     }
 }

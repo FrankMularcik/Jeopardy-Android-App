@@ -31,6 +31,7 @@ import androidx.navigation.navArgument
 import com.example.jeopardyapp.model.JeopardyViewModel
 import com.example.jeopardyapp.model.Round
 import com.example.jeopardyapp.ui.ClueCard
+import com.example.jeopardyapp.ui.ScoreCard
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.jeopardyapp.model.ResponseType
 
@@ -119,6 +120,8 @@ fun RoundsScreen(navController: NavController, viewModel: JeopardyViewModel) {
             }
         }
 
+        ScoreCard(viewModel.jeopardyGame.score)
+
         Button(onClick = {
             // TODO: show stats on stats screen
 
@@ -179,7 +182,8 @@ fun JeopardyBoard(navController: NavController, roundNum: Int, viewModel: Jeopar
             }) }
         }
 
-        // TODO: when round is over we should show stats for end of this round only
+        ScoreCard(viewModel.jeopardyGame.score)
+
         Button(onClick = { navController.navigate(("StatsScreen/false")) }
         ) {
             Text("Round Over.")
@@ -193,7 +197,7 @@ fun ClueScreen(navController: NavController, viewModel: JeopardyViewModel) {
     fun handleResponse(response: ResponseType)
     {
         viewModel.selectedClue?.response = response
-        viewModel.selectedRound?.ClueAnswered(response)
+        viewModel.selectedRound.ClueAnswered(response, viewModel.selectedClue?.dollarAmt ?: 0)
         navController.popBackStack()
     }
 
@@ -289,18 +293,22 @@ fun StatsScreen(navController: NavController, viewModel: JeopardyViewModel, allR
             RoundStats(finalJeopardyRound)
         }
 
+        var buttonTxt = "Continue"
+
         if (allRounds)
         {
-            // TODO: show full game stats
+            GameStats(viewModel)
+            buttonTxt = "Save"
         }
-        // TODO: show projected score
+
+        ScoreCard(viewModel.jeopardyGame.score)
 
         Button(
             onClick = { navigateToNextScreen() },
             modifier = Modifier.padding(4.dp),
             contentPadding = PaddingValues(horizontal = 8.dp)
         ) {
-            Text("Continue")
+            Text(buttonTxt)
         }
     }
 
@@ -326,6 +334,34 @@ fun RoundStats(round: Round)
                     "%d (%.2f%%)",
                     stat.value,
                     100.0 * stat.value / round.totalClues
+                )
+            )
+        }
+    }
+}
+
+@Composable
+fun GameStats(viewModel: JeopardyViewModel)
+{
+    Text("Full Game")
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(ResponseType.entries.size + 1),
+        modifier = Modifier.fillMaxWidth().padding(top = 20.dp)
+    ) {
+        item { Text("Total Clues") }
+        items(ResponseType.entries) { entry -> Text(entry.toString()) }
+
+        val totalClues = viewModel.jeopardyGame.jeopardyRound.totalClues +
+                viewModel.jeopardyGame.doubleJeopardy.totalClues +
+                viewModel.jeopardyGame.finalJeopardy.totalClues
+
+        item { Text(totalClues.toString()) }
+        items(viewModel.jeopardyGame.statsCounter.entries.toList()) { stat ->
+            Text(
+                String.format(
+                    "%d (%.2f%%)",
+                    stat.value,
+                    100.0 * stat.value / totalClues
                 )
             )
         }

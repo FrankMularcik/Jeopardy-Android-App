@@ -7,11 +7,9 @@ class JeopardyGame {
     var doubleJeopardy = Round(RoundType.DoubleJeopardy, this)
     var finalJeopardy = Round(RoundType.FinalJeopardy, this)
 
-    // TODO: add functions or fields for whole game stats
     var statsCounter: Map<ResponseType, Int> = mutableMapOf<ResponseType, Int>()
         get() = CombineStats()
 
-    // TODO: add 'scoring' functionality
     var score: Int = 0
 
     private fun CombineStats(): Map<ResponseType, Int>
@@ -110,13 +108,14 @@ class Round(val roundType: RoundType, val parent: JeopardyGame) {
 
     private fun CreateFinalJeopardyRound()
     {
-        categories.add(Category("Category 1", roundType, this))
+        categories.add(Category("Cat. 1", roundType, this))
     }
 
+    // TODO: maybe add something that lets you change category names on the fly or after the fact
     private fun CreateMainJeopardyRounds()
     {
         for (category in 1..6) {
-            categories.add(Category("Category $category", roundType, this))
+            categories.add(Category("Cat. $category", roundType, this))
         }
     }
 

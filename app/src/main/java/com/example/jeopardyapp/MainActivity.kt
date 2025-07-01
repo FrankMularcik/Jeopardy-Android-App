@@ -4,7 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
@@ -20,11 +22,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
@@ -33,6 +41,7 @@ import com.example.jeopardyapp.model.Round
 import com.example.jeopardyapp.ui.ClueCard
 import com.example.jeopardyapp.ui.ScoreCard
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.jeopardyapp.model.JeopardyGame
 import com.example.jeopardyapp.model.ResponseType
 
 class MainActivity : ComponentActivity() {
@@ -94,7 +103,7 @@ fun RoundsScreen(navController: NavController, viewModel: JeopardyViewModel) {
     Column(modifier = Modifier.fillMaxSize())
     {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(PaddingValues(horizontal = 8.dp, vertical = 36.dp)),
+            modifier = Modifier.fillMaxWidth().padding(PaddingValues(horizontal = 4.dp, vertical = 36.dp)),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
@@ -123,7 +132,6 @@ fun RoundsScreen(navController: NavController, viewModel: JeopardyViewModel) {
         ScoreCard(viewModel.jeopardyGame.score)
 
         Button(onClick = {
-            // TODO: show stats on stats screen
 
             navController.navigate(("StatsScreen/true"))
         },
@@ -134,8 +142,8 @@ fun RoundsScreen(navController: NavController, viewModel: JeopardyViewModel) {
         }
 
         Button(onClick = {
-            // TODO: reset jeopardyGame object
-
+            // reset jeopardyGame object then go to Home
+            viewModel.jeopardyGame = JeopardyGame()
             navController.navigate(("HomeScreen"))
         },
             modifier = Modifier.padding(4.dp)
@@ -175,8 +183,11 @@ fun JeopardyBoard(navController: NavController, roundNum: Int, viewModel: Jeopar
 
     Column(modifier = Modifier.fillMaxSize()) {
         LazyVerticalGrid(columns = GridCells.Fixed(round.NUM_CATEGORIES), modifier = Modifier.fillMaxWidth().padding(top = 20.dp)) {
-            items(/*round?.categories ?: emptyList()*/ categories) {category -> Card(modifier = Modifier.fillMaxWidth().padding(8.dp)) {Text(text = category.catName)}}
-            items(/*round?.GetAllClues() ?: emptyList()*/ clues) { clue -> ClueCard(clue = clue, onClick = {
+            items(categories) {category -> Card(modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp, horizontal = 2.dp).height(40.dp)) {
+                Box(modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center) {
+                Text(text = category.catName)}}}
+            items(clues) { clue -> ClueCard(clue = clue, onClick = {
                 viewModel.selectedClue = clue
                 navController.navigate("ClueScreen")
             }) }
@@ -184,7 +195,8 @@ fun JeopardyBoard(navController: NavController, roundNum: Int, viewModel: Jeopar
 
         ScoreCard(viewModel.jeopardyGame.score)
 
-        Button(onClick = { navController.navigate(("StatsScreen/false")) }
+        Button(modifier = Modifier.padding(8.dp),
+                onClick = { navController.navigate(("StatsScreen/false")) }
         ) {
             Text("Round Over.")
         }
@@ -200,9 +212,6 @@ fun ClueScreen(navController: NavController, viewModel: JeopardyViewModel) {
         viewModel.selectedRound.ClueAnswered(response, viewModel.selectedClue?.dollarAmt ?: 0)
         navController.popBackStack()
     }
-
-    // TODO: create lazyverticalgrid with 2 columns.
-    //  use item{ Button code } block to manually add each button
 
     Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
         LazyVerticalGrid(
@@ -269,73 +278,98 @@ fun StatsScreen(navController: NavController, viewModel: JeopardyViewModel, allR
         var screenName = "RoundsScreen" // go back to RoundsScreen so user can pick next round
         if (allRounds) // we are done with the game
         {
-            // TODO: save jeopardyGame object / stats to database
+            // TODO: save jeopardyGame object / stats to database before resetting jeopardyGame object
             screenName = "HomeScreen" // game is over - go to home so user can start a new game if they want
+
+            viewModel.jeopardyGame = JeopardyGame()  // reset object so we can have a new game
         }
         navController.navigate(screenName)
     }
     val jeopardyRound = viewModel.jeopardyGame.jeopardyRound
     val doubleJeopardyRound = viewModel.jeopardyGame.doubleJeopardy
     val finalJeopardyRound = viewModel.jeopardyGame.finalJeopardy
+    var buttonTxt = "Continue"
 
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 20.dp)) {
-
-        if (allRounds || roundType == jeopardyRound.roundType)
-        {
-            RoundStats(jeopardyRound)
-        }
-        if (allRounds || roundType == doubleJeopardyRound.roundType)
-        {
-            RoundStats(doubleJeopardyRound)
-        }
-        if (allRounds || roundType == finalJeopardyRound.roundType)
-        {
-            RoundStats(finalJeopardyRound)
-        }
-
-        var buttonTxt = "Continue"
-
-        if (allRounds)
-        {
-            GameStats(viewModel)
-            buttonTxt = "Save"
-        }
-
-        ScoreCard(viewModel.jeopardyGame.score)
-
-        Button(
-            onClick = { navigateToNextScreen() },
-            modifier = Modifier.padding(4.dp),
-            contentPadding = PaddingValues(horizontal = 8.dp)
+    Box(modifier = Modifier.fillMaxSize())
+    {
+        LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 40.dp).padding(bottom = 150.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            Text(buttonTxt)
+
+            if (allRounds || roundType == jeopardyRound.roundType) {
+                item {
+                    RoundStats(jeopardyRound)
+                }
+            }
+            if (allRounds || roundType == doubleJeopardyRound.roundType) {
+                item {
+                    RoundStats(doubleJeopardyRound)
+                }
+            }
+            if (allRounds || roundType == finalJeopardyRound.roundType) {
+                item {
+                    RoundStats(finalJeopardyRound)
+                }
+            }
+
+            if (allRounds) {
+                item {
+                    GameStats(viewModel)
+                }
+                buttonTxt = "Save"
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(bottom = 40.dp)
+                .padding(horizontal = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        )
+        {
+            ScoreCard(viewModel.jeopardyGame.score)
+
+            Button(
+                onClick = { navigateToNextScreen() },
+                modifier = Modifier.padding(4.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp)
+            ) {
+                Text(buttonTxt)
+            }
         }
     }
-
 }
 
 @Composable
 fun RoundStats(round: Round)
 {
-    // TODO: improve formatting / make prettier
+    // TODO: improve formatting / make prettier. Decent for now but could improve?
 
     Text(round.roundType.toString())
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(ResponseType.entries.size + 1),
-        modifier = Modifier.fillMaxWidth().padding(top = 20.dp)
-    ) {
-        item { Text("Total Clues") }
-        items(ResponseType.entries) { entry -> Text(entry.toString()) }
 
-        item { Text(round.totalClues.toString()) }
-        items(round.statsCounter.entries.toList()) { stat ->
-            Text(
-                String.format(
-                    "%d (%.2f%%)",
-                    stat.value,
-                    100.0 * stat.value / round.totalClues
+    LazyRow(modifier = Modifier.fillMaxWidth().padding())
+    {
+        item {
+            Column(modifier = Modifier.border(1.dp, Color.Black).padding(10.dp)) {
+                Text(text = "Total Clues")
+
+                Text(round.totalClues.toString())
+            }
+        }
+        items(ResponseType.entries.zip(round.statsCounter.entries)) { (entry, stat) ->
+            Column(modifier = Modifier.border(1.dp, Color.Black).padding(10.dp))
+            {
+                Text(entry.toString())
+                Text(
+                    String.format(
+                        "%d (%.2f%%)",
+                        stat.value,
+                        100.0 * stat.value / round.totalClues
+                    )
                 )
-            )
+            }
         }
     }
 }
@@ -344,26 +378,32 @@ fun RoundStats(round: Round)
 fun GameStats(viewModel: JeopardyViewModel)
 {
     Text("Full Game")
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(ResponseType.entries.size + 1),
-        modifier = Modifier.fillMaxWidth().padding(top = 20.dp)
-    ) {
-        item { Text("Total Clues") }
-        items(ResponseType.entries) { entry -> Text(entry.toString()) }
 
+    LazyRow(modifier = Modifier.fillMaxWidth().height(125.dp))
+    {
         val totalClues = viewModel.jeopardyGame.jeopardyRound.totalClues +
                 viewModel.jeopardyGame.doubleJeopardy.totalClues +
                 viewModel.jeopardyGame.finalJeopardy.totalClues
 
-        item { Text(totalClues.toString()) }
-        items(viewModel.jeopardyGame.statsCounter.entries.toList()) { stat ->
-            Text(
-                String.format(
-                    "%d (%.2f%%)",
-                    stat.value,
-                    100.0 * stat.value / totalClues
+        item {
+            Column(modifier = Modifier.border(1.dp, Color.Black).padding(10.dp)) {
+                Text(text = "Total Clues")
+
+                Text(totalClues.toString())
+            }
+        }
+        items(ResponseType.entries.zip(viewModel.jeopardyGame.statsCounter.entries)) { (entry, stat) ->
+            Column(modifier = Modifier.border(1.dp, Color.Black).padding(10.dp))
+            {
+                Text(entry.toString())
+                Text(
+                    String.format(
+                        "%d (%.2f%%)",
+                        stat.value,
+                        100.0 * stat.value / totalClues
+                    )
                 )
-            )
+            }
         }
     }
 }
